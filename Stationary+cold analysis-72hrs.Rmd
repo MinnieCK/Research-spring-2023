@@ -28,21 +28,32 @@ colnames(lum_raw)[2] <- "temp"
 
 Declare well
 ```{r}
+# saparate well by strain
 MK62 = c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10")
-MK63 = c("C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
-MK64 = c("D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10")
+MK63 = c("C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+MK64 = c("D2", "D4", "D6", "D8", "D9", "D10")
 MK65 = c("E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10")
 MK66 = c("F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10")
-MK67 = c("G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10")
-unused = c("A4", "A5", "F1", "H1")
-control = c("A1", "A2", "A3", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "B1", "B12", "C1", "C12", "D1", "D12", "E1", "E12", "F12", "G1", "G12", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12", "B11","C11", "D11", "E11", "F11", "G11")
+MK67 = c("G2", "G3", "G4", "G5", "G7", "G8", "G9", "G10")
+
+# well that contains no bacteria but get contaminate
+contam = c("A4", "A5", "F1", "H1", "B1")
+
+# well that have condensation at the start
+conden = c("A11", "H12", "G12", "D1", "C2", "D3", "D5", "D7", "G6", "F12", "H4")
+
+# well that contains no bacteria
+control = c("A1", "A2", "A3", "A6", "A7", "A8", "A9", "A10", "A12", "B12", "C1", "C12", "D12", "E1", "E12", "G1", "H2", "H3", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "B11","C11", "D11", "E11", "F11", "G11")
 ```
 
 normalized time/pivot table
 ```{r}
+# normalized time into minutes
 abs_with_time <- abs_raw %>%
-  mutate(Time = Time[1] %--% Time)
+  mutate(Time = Time[1] %--% Time, # use time interval to normalize time
+         Time = as.numeric(Time, unit = "hours") )
 
+# pivot absorbance table
 abs_df <- abs_with_time %>% 
   pivot_longer(
     cols = !Time & !temp, 
@@ -50,9 +61,12 @@ abs_df <- abs_with_time %>%
     values_to = "absorbance"
   )
 
+# normalized time into minutes
 lum_with_time <- lum_raw %>%
-  mutate(Time = Time[1] %--% Time)
+  mutate(Time = Time[1] %--% Time,
+         Time = as.numeric(Time, unit = "hours"))
 
+# pivot luminescence table
 lum_df <- lum_with_time %>% 
   pivot_longer(
     cols = !Time & !temp, 
@@ -62,19 +76,14 @@ lum_df <- lum_with_time %>%
 ```
 
 
-Normalized background abs
+Combine abs and lum table and declare strain/species/promoter group
 ```{r}
-control_df <- which((abs_df$Time > 1440 & abs_df$Time < 2880) & abs_df$well %in% control)
-abs_df[control_df,]$absorbance
-mean(abs_df[control_df,]$absorbance)
-```
-
-normalized the data
-```{r}
+# combine abs and lum dataframe
 abs_lum <- cbind(abs_df, lum_df[4])
 
-normalized_lum <- abs_lum %>%
-  mutate(normalized = luminescence/absorbance,
+# assign strain/species/promoter group to each well
+group_abs_lum <- abs_lum %>%
+  mutate(# declare strain
          strain = case_when(
            well %in% MK62 ~ "MK62",
            well %in% MK63 ~ "MK63",
@@ -82,8 +91,10 @@ normalized_lum <- abs_lum %>%
            well %in% MK65 ~ "MK65",
            well %in% MK66 ~ "MK66",
            well %in% MK67 ~ "MK67",
-           well %in% unused ~ "unused",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
            well %in% control ~ "control"),
+         # declare species
          species = case_when(
            well %in% MK62 ~ "E. coli",
            well %in% MK63 ~ "E. coli",
@@ -91,8 +102,10 @@ normalized_lum <- abs_lum %>%
            well %in% MK65 ~ "E. clocae",
            well %in% MK66 ~ "E. clocae",
            well %in% MK67 ~ "E. clocae",
-           well %in% unused ~ "unused",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
            well %in% control ~ "control"),
+         # declare promoter
          promoter = case_when(
            well %in% MK62 ~ "no promoter",
            well %in% MK63 ~ "E. coli promoter",
@@ -100,67 +113,91 @@ normalized_lum <- abs_lum %>%
            well %in% MK65 ~ "no promoter",
            well %in% MK66 ~ "E. coli promoter",
            well %in% MK67 ~ "E. clocae promoter",
-           well %in% unused ~ "unused",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
            well %in% control ~ "control"))
 ```
 
-Choose only used well
+normalized absorbance and luminescence with backgroud
 ```{r}
-correct_well_data <- normalized_lum %>%
-  filter(strain != "unused")
+# get background abs and lum at each time
+envi_mean <- group_abs_lum %>%
+  filter(strain == "control") %>%
+  group_by(Time) %>%
+  summarize(mean_abs = mean(absorbance),
+            mean_lum = mean(luminescence))
+# combine background abs and lum data with experiment data
+normalize_envi <- left_join(group_abs_lum, envi_mean, by = "Time")
+
+# normalize abs and lum with background
+normalize_abs_lum <- normalize_envi %>%
+  mutate(absorbance = absorbance - mean_abs,
+         luminescence = luminescence - mean_lum)
 ```
 
-Plot things out
+normalized luminescence with absorbance
 ```{r}
-ggplot(data = correct_well_data) + 
-  geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  xlab("Time (min)") +
-  ylab("normalized luminescence") +
-  ggtitle("third trial")
+# normalised the luminescence to the absorbance
+normalized_lum <- normalize_abs_lum %>%
+  mutate(normalized = luminescence/absorbance)
+```
+
+Choose only used well, don't use the well that has contamination potential or have condensation at the start
+```{r}
+correct_well_data <- normalized_lum %>%
+  filter(strain != "contaminate") %>%
+  filter(strain != "condensated")
+```
+
+Plot normalized luminescence out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    xlab("Time (hours)") +
+    ylab("normalized luminescence") +
+    ggtitle("third trial")
 ```
 
 
 Plot raw abs out
 ```{r}
-raw_data_plot <- normalized_lum %>%
-  filter(species != "unused")
-
-ggplot(data = raw_data_plot) + 
+ggplot(data = correct_well_data) + 
   geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
   scale_shape_manual(values=c(1, 2, 3, 4))+
-  xlab("Time (min)") +
+  xlab("Time (hours)") +
   ylab("raw absorbance") +
   ggtitle("Raw absorbance third trial")
 ```
 
 Plot raw lum out
 ```{r}
-ggplot(data = raw_data_plot) + 
+ggplot(data = correct_well_data) + 
   geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
   scale_shape_manual(values=c(1, 2, 3))+
-  xlab("Time (min)") +
+  xlab("Time (hours)") +
   ylab("luminescence") +
   ggtitle("Raw luminescence third trial")
 ```
 
-plot log scale
+plot normalized luminescence log scale
 ```{r}
-ggplot(data = correct_well_data) + 
-  geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  scale_y_continuous(trans = 'log10') +
-  xlab("Time (min)") +
-  ylab("normalized luminescence (log10)") +
-  ggtitle("Third trial")
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    scale_y_continuous(trans = 'log10') +
+    xlab("Time (min)") +
+    ylab("normalized luminescence (log10)") +
+    ggtitle("Third trial")
 ```
 
-Plot raw abs log out
+Plot raw abs log scale
 ```{r}
-raw_data_plot <- normalized_lum %>%
-  filter(species != "unused")
-
-ggplot(data = raw_data_plot) + 
+ggplot(data = correct_well_data) + 
   geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
   scale_shape_manual(values=c(1, 2, 3, 4))+
   scale_y_continuous(trans = 'log10') +
@@ -169,9 +206,9 @@ ggplot(data = raw_data_plot) +
   ggtitle("Raw absorbance third trial")
 ```
 
-Plot raw lum log out
+Plot raw lum log scale
 ```{r}
-ggplot(data = raw_data_plot) + 
+ggplot(data = correct_well_data) + 
   geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
   scale_shape_manual(values=c(1, 2, 3))+
   scale_y_continuous(trans = 'log10') +
