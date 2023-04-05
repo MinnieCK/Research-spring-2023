@@ -126,19 +126,41 @@ envi_mean <- group_abs_lum %>%
   group_by(Time) %>%
   summarize(mean_abs = mean(absorbance),
             mean_lum = mean(luminescence))
+
 # combine background abs and lum data with experiment data
 normalize_envi <- left_join(group_abs_lum, envi_mean, by = "Time")
 
 # normalize abs and lum with background
 normalize_abs_lum <- normalize_envi %>%
-  mutate(absorbance = absorbance - mean_abs,
-         luminescence = luminescence - mean_lum)
+  mutate(absorbance = case_when(
+           absorbance - mean_abs > 0 ~ absorbance - mean_abs,
+           absorbance - mean_abs <= 0 ~ mean_abs),
+         luminescence = case_when(
+           luminescence - mean_lum > 0 ~ luminescence - mean_lum,
+           luminescence - mean_lum <= 0 ~ mean_lum))
+```
+
+Plot envi_mean out
+```{r}
+envi_mean %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (min)") +
+    ylab("background abs") +
+    ggtitle("envi_mean, abs")
+envi_mean %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (min)") +
+    ylab("background lum") +
+    ggtitle("envi_mean, lum")
 ```
 
 normalized luminescence with absorbance
 ```{r}
 # normalised the luminescence to the absorbance
 normalized_lum <- normalize_abs_lum %>%
+#normalized_lum <- normalize_envi %>%
   mutate(normalized = luminescence/absorbance)
 ```
 
@@ -158,28 +180,8 @@ correct_well_data %>%
     scale_shape_manual(values=c(1, 2, 3))+
     xlab("Time (hours)") +
     ylab("normalized luminescence") +
-    ggtitle("third trial")
-```
-
-
-Plot raw abs out
-```{r}
-ggplot(data = correct_well_data) + 
-  geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-  scale_shape_manual(values=c(1, 2, 3, 4))+
-  xlab("Time (hours)") +
-  ylab("raw absorbance") +
-  ggtitle("Raw absorbance third trial")
-```
-
-Plot raw lum out
-```{r}
-ggplot(data = correct_well_data) + 
-  geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  xlab("Time (hours)") +
-  ylab("luminescence") +
-  ggtitle("Raw luminescence third trial")
+    ggtitle("third trial") +
+  facet_wrap(~strain)
 ```
 
 plot normalized luminescence log scale
@@ -192,27 +194,64 @@ correct_well_data %>%
     scale_y_continuous(trans = 'log10') +
     xlab("Time (min)") +
     ylab("normalized luminescence (log10)") +
-    ggtitle("Third trial")
+    ggtitle("Third trial, log scale") +
+    facet_wrap(~strain)
+```
+
+Plot raw abs out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
+    scale_shape_manual(values=c(1, 2, 3, 4))+
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (hours)") +
+    ylab("raw absorbance") +
+    ggtitle("Raw absorbance third trial") +
+    facet_wrap(~strain)
 ```
 
 Plot raw abs log scale
 ```{r}
-ggplot(data = correct_well_data) + 
-  geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-  scale_shape_manual(values=c(1, 2, 3, 4))+
-  scale_y_continuous(trans = 'log10') +
-  xlab("Time (min)") +
-  ylab("raw absorbance (log10)") +
-  ggtitle("Raw absorbance third trial")
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
+    scale_shape_manual(values=c(1, 2, 3, 4))+
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    scale_y_continuous(trans = 'log10') +
+    xlab("Time (min)") +
+    ylab("raw absorbance (log10)") +
+    ggtitle("Raw absorbance third trial") +
+    facet_wrap(~strain)
+```
+
+Plot raw lum out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() +  
+    geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (hours)") +
+    ylab("luminescence") +
+    ggtitle("Raw luminescence third trial") +
+    facet_wrap(~strain)
 ```
 
 Plot raw lum log scale
 ```{r}
-ggplot(data = correct_well_data) + 
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
   geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
   scale_shape_manual(values=c(1, 2, 3))+
+  #geom_point(mapping = aes(x = Time, y = mean_lum)) +
   scale_y_continuous(trans = 'log10') +
   xlab("Time (min)") +
   ylab("luminescence (log10)") +
-  ggtitle("Raw luminescence third trial")
+  ggtitle("Raw luminescence third trial") +
+  facet_wrap(~strain)
 ```
