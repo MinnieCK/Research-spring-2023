@@ -133,21 +133,24 @@ normalize_envi <- left_join(group_abs_lum, envi_mean, by = "Time")
 # normalize abs and lum with background
 normalize_abs_lum <- normalize_envi %>%
   mutate(absorbance = case_when(
-           absorbance - mean_abs > 0 ~ absorbance - mean_abs,
-           absorbance - mean_abs <= 0 ~ mean_abs),
+           absorbance > mean_abs ~ absorbance - mean_abs,
+           absorbance <= mean_abs ~ 0.0000001), #assign number to prevent 0
          luminescence = case_when(
-           luminescence - mean_lum > 0 ~ luminescence - mean_lum,
-           luminescence - mean_lum <= 0 ~ mean_lum))
+           luminescence > mean_lum ~ luminescence - mean_lum,
+           luminescence <= mean_lum ~ 0.0000001)) ##assign number to prevent 0
 ```
 
 Plot envi_mean out
 ```{r}
+# plot background abs
 envi_mean %>%
   ggplot() + 
     geom_point(mapping = aes(x = Time, y = mean_abs)) +
     xlab("Time (min)") +
     ylab("background abs") +
     ggtitle("envi_mean, abs")
+
+# plot background lum
 envi_mean %>%
   ggplot() + 
     geom_point(mapping = aes(x = Time, y = mean_lum)) +
@@ -248,7 +251,7 @@ correct_well_data %>%
   ggplot() + 
   geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
   scale_shape_manual(values=c(1, 2, 3))+
-  #geom_point(mapping = aes(x = Time, y = mean_lum)) +
+  geom_point(mapping = aes(x = Time, y = mean_lum)) +
   scale_y_continuous(trans = 'log10') +
   xlab("Time (min)") +
   ylab("luminescence (log10)") +
