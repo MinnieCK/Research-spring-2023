@@ -134,10 +134,10 @@ normalize_envi <- left_join(group_abs_lum, envi_mean, by = "Time")
 normalize_abs_lum <- normalize_envi %>%
   mutate(absorbance = case_when(
            absorbance > mean_abs ~ absorbance - mean_abs,
-           absorbance <= mean_abs ~ 0.0000001), #assign number to prevent 0
+           absorbance <= mean_abs ~ 0), #assign number to 0
          luminescence = case_when(
            luminescence > mean_lum ~ luminescence - mean_lum,
-           luminescence <= mean_lum ~ 0.0000001)) ##assign number to prevent 0
+           luminescence <= mean_lum ~ 0)) ##assign number to 0
 ```
 
 Plot envi_mean out
@@ -208,7 +208,6 @@ correct_well_data %>%
   ggplot() + 
     geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
     scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
     xlab("Time (hours)") +
     ylab("raw absorbance") +
     ggtitle("Raw absorbance third trial") +
@@ -222,8 +221,7 @@ correct_well_data %>%
   ggplot() + 
     geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
     scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    scale_y_continuous(trans = 'log10') +
+    scale_y_continuous(trans = 'log10', limits = c(.01, 2)) +
     xlab("Time (min)") +
     ylab("raw absorbance (log10)") +
     ggtitle("Raw absorbance third trial") +
@@ -237,7 +235,6 @@ correct_well_data %>%
   ggplot() +  
     geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
     scale_shape_manual(values=c(1, 2, 3))+
-    geom_point(mapping = aes(x = Time, y = mean_lum)) +
     xlab("Time (hours)") +
     ylab("luminescence") +
     ggtitle("Raw luminescence third trial") +
@@ -251,10 +248,53 @@ correct_well_data %>%
   ggplot() + 
   geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
   scale_shape_manual(values=c(1, 2, 3))+
-  geom_point(mapping = aes(x = Time, y = mean_lum)) +
   scale_y_continuous(trans = 'log10') +
   xlab("Time (min)") +
   ylab("luminescence (log10)") +
   ggtitle("Raw luminescence third trial") +
   facet_wrap(~strain)
 ```
+
+Calculate the lum at exponential growth phrase
+```{r}
+rep_lum <- correct_well_data %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.1) %>%
+  group_by(strain) %>%
+  summarise(repLum = mean(normalized),
+            repLumsd = sd(normalized),
+            repLumError = sd(normalized)/sqrt(n()),
+            maxError = repLum + repLumError,
+            minError = repLum - repLumError)
+
+correct_well_data_repLum <- left_join(correct_well_data, rep_lum, by = "strain")
+```
+
+Plot lum at exponential growth
+```{r}
+correct_well_data_repLum %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+  ggplot(aes(x = strain, y = normalized, color = promoter)) +
+  geom_point(aes(shape = species), position = "jitter", alpha = .4) +
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminessence at exponential growth")
+```
+
+Plot the lum at exponential growth phrase
+```{r}
+correct_well_data_repLum %>%
+  filter(strain != "control") %>%
+  ggplot(aes(x = strain, y = repLum, color = promoter, shape = species)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = repLum - repLumsd, ymax = repLum + repLumsd), width=.2,
+                 position=position_dodge(0.05)) +
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.1)") +
+  ggtitle("Luminessence at exponential growth")
+```
+
+
+
+
