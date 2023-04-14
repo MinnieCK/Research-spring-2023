@@ -1,0 +1,123 @@
+---
+title: "Jo Thesis Making stat + exp plot"
+author: "Josephine Adams"
+date: "2023-04-11"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+library(tidyverse) 
+library(infer)
+library(broom)
+library(readxl)
+```
+
+```{r}
+exp_15 <- read.csv("exponential 15c.csv")
+all_37 <- read.csv("stat & exp 37c.csv")
+all_stat_exp <- rbind(exp_15, all_37)
+```
+
+```{r}
+all_summarized <- data.frame(all_stat_exp) %>% group_by(strain, group) %>% 
+  summarize(mean_lum = mean(luminescence), 
+            sd_lum = sd(luminescence), 
+            time = Time)%>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA",
+           strain == "control" ~ "control")) 
+
+# norm_summarized <- all_stat_exp %>% group_by(strain, group) %>% 
+#   summarize(time = Time, 
+#             mean_norm_lum = mean(normalized),
+#             sd_norm_lum = sd(normalized))%>%
+#   filter(strain != "control") 
+
+comp_plot <- data.frame(all_summarized) %>%
+  filter(strain != "control") %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA"))  %>%
+  ggplot(aes(x = group, y = mean_lum)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = (mean_lum - sd_lum), ymax =  mean_lum + sd_lum)) +
+  facet_wrap(~ strain, scales = "free_y") +
+  ylab("Mean Luminescence")
+comp_plot
+ggsave("comparison plot.png", comp_plot, height = 5, width = 8)
+
+# all_stat_exp %>%  
+#   dplyr::mutate(strain = fct_relevel(
+#     strain,
+#     "JAA7",
+#     "JAA13" ,
+#     "JAA17",
+#     "JAA18",
+#     "JAA20",
+#     "JAA21")) %>%
+#   ggplot(aes(x = group, y = luminescence)) +
+#   geom_point() +
+#   facet_grid(~ strain)
+```
+
+```{r}
+norm_summarized <- all_stat_exp %>% group_by(strain, group) %>% 
+  summarize(mean_lum = mean(normalized), 
+            #sd_lum = sd(normalized), 
+            #time = Time
+            )%>%
+  filter(strain != "control") %>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA",
+           strain == "control" ~ "control")) 
+
+# norm_summarized <- all_stat_exp %>% group_by(strain, group) %>% 
+#   summarize(time = Time, 
+#             mean_norm_lum = mean(normalized),
+#             sd_norm_lum = sd(normalized))%>%
+#   filter(strain != "control") 
+
+data.frame(norm_summarized)%>%  
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+   "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot(aes(x = group, y = mean_lum)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = (mean_lum - sd_lum), ymax =  mean_lum + sd_lum)) +
+  facet_wrap(~ strain)
+
+data.frame(all_stat_exp)%>%  
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+   "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot(aes(x = group, y = normalized))  +
+  geom_violin() +
+  scale_y_log10() +
+  facet_wrap(~ strain, scales = "free_y")
+```
+
