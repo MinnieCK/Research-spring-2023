@@ -143,12 +143,13 @@ normalize_envi_15_1 <- left_join(group_abs_lum_15_1, envi_mean_15_1, by = "Time"
 
 # normalize abs and lum with background
 normalize_abs_lum_15_1 <- normalize_envi_15_1 %>%
-  mutate(absorbance = case_when(
+  mutate(absorbance = 
+           case_when(
            absorbance > mean_abs ~ absorbance - mean_abs,
-           absorbance <= mean_abs ~ 0.0000001), #assign number to prevent 0
+           absorbance <= mean_abs ~0.000001), #assign number to prevent 0
          luminescence = case_when(
            luminescence > mean_lum ~ luminescence - mean_lum,
-           luminescence <= mean_lum ~ 0.0000001)) ##assign number to prevent 0
+           luminescence <= mean_lum ~ NA)) ##assign number to prevent 0
 ```
 
 Plot envi_mean out
@@ -183,92 +184,6 @@ Choose only used well, don't use the well that has contamination potential or ha
 correct_well_data_15_1 <- normalized_lum_15_1 %>%
   filter(strain != "contaminate") %>%
   filter(strain != "condensated")
-```
-
-Plot normalized luminescence out
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    xlab("Time (hours)") +
-    ylab("normalized luminescence") +
-    ggtitle("15C Exp 1") +
-  facet_wrap(~strain)
-```
-
-plot normalized luminescence log scale
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("normalized luminescence (log10)") +
-    ggtitle("Third trial, log scale") +
-    facet_wrap(~strain)
-```
-
-Plot raw abs out
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    xlab("Time (hours)") +
-    ylab("raw absorbance") +
-    ggtitle("Raw absorbance third trial") +
-    facet_wrap(~strain)
-```
-JAA18 basically didn't grow. Should I remove it. I think it may not ever grow.  
- 
-Plot raw abs log scale
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("raw absorbance (log10)") +
-    ggtitle("Raw absorbance third trial") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum out
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() +  
-    geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    geom_point(mapping = aes(x = Time, y = mean_lum)) +
-    xlab("Time (hours)") +
-    ylab("luminescence") +
-    ggtitle("Raw luminescence third trial") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum log scale
-```{r}
-correct_well_data_15_1 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-  geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  geom_point(mapping = aes(x = Time, y = mean_lum)) +
-  scale_y_continuous(trans = 'log10') +
-  xlab("Time (min)") +
-  ylab("luminescence (log10)") +
-  ggtitle("Raw luminescence third trial") +
-  facet_wrap(~strain)
 ```
 
 #15C Exp 2
@@ -377,12 +292,14 @@ normalize_envi_15_2 <- left_join(group_abs_lum_15_2, envi_mean_15_2, by = "Time"
 
 # normalize abs and lum with background
 normalize_abs_lum_15_2 <- normalize_envi_15_2 %>%
-  mutate(absorbance = case_when(
+  mutate(absorbance = 
+           case_when(
            absorbance > mean_abs ~ absorbance - mean_abs,
-           absorbance <= mean_abs ~ 0.0000001), #assign number to prevent 0
+           absorbance <= mean_abs ~0.000001), #assign number to prevent 0
          luminescence = case_when(
            luminescence > mean_lum ~ luminescence - mean_lum,
-           luminescence <= mean_lum ~ 0.0000001)) ##assign number to prevent 0
+           luminescence <= mean_lum ~ NA)##assign number to prevent 0
+         ) 
 ```
 
 Plot envi_mean out
@@ -416,91 +333,6 @@ Choose only used well, don't use the well that has contamination potential or ha
 correct_well_data_15_2 <- normalized_lum_15_2 %>%
   filter(strain != "contaminate") %>%
   filter(strain != "condensated")
-```
-
-Plot normalized luminescence out
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    xlab("Time (hours)") +
-    ylab("normalized luminescence") +
-    ggtitle("15C Exp 2") +
-  facet_wrap(~strain)
-```
-
-plot normalized luminescence log scale
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("normalized luminescence (log10)") +
-    ggtitle("15 Exp 2, log scale") +
-    facet_wrap(~strain)
-```
-
-Plot raw abs out
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    xlab("Time (hours)") +
-    ylab("raw absorbance") +
-    ggtitle("Raw absorbance 15 Exp 2") +
-    facet_wrap(~strain)
-```
-
-Plot raw abs log scale
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("raw absorbance (log10)") +
-    ggtitle("Raw absorbance 15 Exp 2") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum out
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() +  
-    geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    geom_point(mapping = aes(x = Time, y = mean_lum)) +
-    xlab("Time (hours)") +
-    ylab("luminescence") +
-    ggtitle("Raw luminescence 15 Exp 2") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum log scale
-```{r}
-correct_well_data_15_2 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-  geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  geom_point(mapping = aes(x = Time, y = mean_lum)) +
-  scale_y_continuous(trans = 'log10') +
-  xlab("Time (min)") +
-  ylab("luminescence (log10)") +
-  ggtitle("Raw luminescence log 15 Exp 2 ") +
-  facet_wrap(~strain)
 ```
 
 #15C Exp 3
@@ -550,8 +382,8 @@ JAA13_15_3 = c( "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10","C11")
 JAA17_15_3 = c("D2", "D3", "D4", "D5", "D6", "D7","D8", "D9", "D10")
 
 # well that contains no bacteria but get contaminate
-contam_15_3 = c("A2", "A3","C2","D11")
-control_15_3 = c("A1", "A4", "A5", "A6", "A7", "A8", "A9", "A10","A11", "A12", "B1", "B12", "C1", "C12", "D1","D12", "E1", "E12", "F1", "F12","G1","G12","H1","H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11","H12" )
+contam_15_3 = c("A1", "A4","A2", "A3","C2","B1","D11")
+control_15_3 = c( "A5", "A6", "A7", "A8", "A9", "A10","A11", "A12",  "B12", "C1", "C12", "D1","D12", "E1", "E12", "F1", "F12","G1","G12","H1","H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11","H12" )
 ```
 
 
@@ -611,12 +443,13 @@ normalize_envi_15_3 <- left_join(group_abs_lum_15_3, envi_mean_15_3, by = "Time"
 
 # normalize abs and lum with background
 normalize_abs_lum_15_3 <- normalize_envi_15_3 %>%
-  mutate(absorbance = case_when(
+  mutate(absorbance =  
+           case_when(
            absorbance > mean_abs ~ absorbance - mean_abs,
-           absorbance <= mean_abs ~ 0.0000001), #assign number to prevent 0
+           absorbance <= mean_abs ~ 0.000001), #assign number to prevent 0
          luminescence = case_when(
            luminescence > mean_lum ~ luminescence - mean_lum,
-           luminescence <= mean_lum ~ 0.0000001)) ##assign number to prevent 0
+           luminescence <= mean_lum ~ NA)) ##assign number to prevent 0
 ```
 
 Plot envi_mean out
@@ -652,92 +485,80 @@ correct_well_data_15_3 <- normalized_lum_15_3 %>%
   filter(strain != "condensated")
 ```
 
-Plot normalized luminescence out
+#checking background
 ```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    xlab("Time (hours)") +
-    ylab("normalized luminescence") +
-    ggtitle("15C Exp 2") +
-  facet_wrap(~strain)
+ data.frame(normalize_envi_15_1) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+ data.frame(normalize_envi_15_1) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+ 
+ data.frame(normalize_envi_15_1) %>% 
+   filter(strain == "control") %>% 
+   group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
+```
+```{r}
+ data.frame(normalize_envi_15_2) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+ data.frame(normalize_envi_15_2) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+ 
+  data.frame(normalize_envi_15_2) %>% 
+   filter(strain == "control") %>% 
+    group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
+```
+```{r}
+
+ data.frame(normalize_envi_15_3) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+
+ data.frame(normalize_envi_15_3) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+
+ 
+  data.frame(normalize_envi_15_3) %>% 
+   filter(strain == "control") %>% 
+    group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
 ```
 
-plot normalized luminescence log scale
-```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("normalized luminescence (log10)") +
-    ggtitle("15 Exp 2, log scale") +
-    facet_wrap(~strain)
-```
 
-Plot raw abs out
-```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    xlab("Time (hours)") +
-    ylab("raw absorbance") +
-    ggtitle("Raw absorbance 15 Exp 2") +
-    facet_wrap(~strain)
-```
 
-Plot raw abs log scale
-```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
-    scale_shape_manual(values=c(1, 2, 3, 4))+
-    geom_point(mapping = aes(x = Time, y = mean_abs)) +
-    scale_y_continuous(trans = 'log10') +
-    xlab("Time (min)") +
-    ylab("raw absorbance (log10)") +
-    ggtitle("Raw absorbance 15 Exp 2") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum out
-```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() +  
-    geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-    scale_shape_manual(values=c(1, 2, 3))+
-    geom_point(mapping = aes(x = Time, y = mean_lum)) +
-    xlab("Time (hours)") +
-    ylab("luminescence") +
-    ggtitle("Raw luminescence 15 Exp 2") +
-    facet_wrap(~strain)
-```
-
-Plot raw lum log scale
-```{r}
-correct_well_data_15_3 %>%
-  filter(strain != "control") %>%
-  ggplot() + 
-  geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
-  scale_shape_manual(values=c(1, 2, 3))+
-  geom_point(mapping = aes(x = Time, y = mean_lum)) +
-  scale_y_continuous(trans = 'log10') +
-  xlab("Time (min)") +
-  ylab("luminescence (log10)") +
-  ggtitle("Raw luminescence log 15 Exp 2 ") +
-  facet_wrap(~strain)
-```
 #Merging 15C Data 
 ```{r}
+
+correct_well_data_15_1 <- correct_well_data_15_1 %>% mutate(trial = "one")
+correct_well_data_15_2 <- correct_well_data_15_2 %>% mutate(trial = "two")
+correct_well_data_15_3 <- correct_well_data_15_3 %>% mutate(trial = "three")
+
 correct_well_data_15 <- rbind(correct_well_data_15_1, correct_well_data_15_2)
 correct_well_data_15 <- rbind(correct_well_data_15, correct_well_data_15_3)
 
@@ -801,7 +622,7 @@ ggsave("15C abs plot.png", cold_abs_plot, height = 4, width = 9)
 #Making regression to approx doubling time 
 ```{r}
 reg_times_15 <- correct_well_data_15 %>% 
-  filter(Time > 3 &
+  filter(Time > 5 &
            Time < 15) %>%
   mutate(log_abs = log2(absorbance))
 ```
@@ -811,77 +632,96 @@ jaa7_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA7")
 ggplot(jaa7_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm)
-jaa7_model_15 <- lm(log_abs ~ Time, data = jaa7_15)
+lm(log_abs ~ Time, data = jaa7_15)
 
 jaa13_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA13")
 ggplot(jaa13_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm)
-jaa13_model_15 <- lm(log_abs ~ Time, data = jaa13_15)
+lm(log_abs ~ Time, data = jaa13_15)
 
 jaa17_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA17")
 ggplot(jaa17_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm)
-jaa17_model_15 <- lm(log_abs ~ Time, data = jaa17_15)
+lm(log_abs ~ Time, data = jaa17_15)
 
 jaa18_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA18")
 ggplot(jaa18_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm) #this one doesn't look at good
-jaa18_model_15 <- lm(log_abs ~ Time, data = jaa18_15)
+lm(log_abs ~ Time, data = jaa18_15)
 
 jaa20_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA20")
 ggplot(jaa20_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm)
-jaa20_model_15 <- lm(log_abs ~ Time, data = jaa20_15)
+lm(log_abs ~ Time, data = jaa20_15)
 
 jaa21_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA21")
 ggplot(jaa21_15, aes(x =Time, y=log_abs)) +
   geom_point() +
   stat_smooth(method = lm)
-jaa21_model_15 <- lm(log_abs ~ Time, data = jaa21_15)
+lm(log_abs ~ Time, data = jaa21_15)
 ```
 make a new table with doubling time estimations
 ```{r}
+
 jaa7_15_est <- jaa7_15 %>%
-  mutate(N_t = -9.223 + (1/0.3397)*Time)
+  mutate(N_t = -8.5758 + (0.2805)*Time)
 
 jaa13_15_est <- jaa13_15 %>%
-  mutate(N_t = -8.4561 + (1/0.4116)*Time)
+  mutate(N_t = -7.794 + (0.356)*Time)
 
 doub_est <- rbind(jaa7_15_est, jaa13_15_est)
 
 jaa17_15_est <- jaa17_15 %>%
-  mutate(N_t = -9.489 + (1/0.330)*Time)
+  mutate(N_t = -8.550 + (0.245)*Time)
 
 doub_est <- rbind(doub_est, jaa17_15_est)
 
 jaa18_15_est <- jaa18_15 %>%
-  mutate(N_t = -16.8586  + (1/0.4537)*Time)
+  mutate(N_t = -16.2386 + (0.4006)*Time)
 
 doub_est <- rbind(doub_est, jaa18_15_est)
 
 jaa20_15_est <- jaa20_15 %>%
-  mutate(N_t = -7.6679 + (1/0.3719)*Time)
+  mutate(N_t = -7.2754 + (0.3365)*Time)
 
 doub_est <- rbind(doub_est, jaa20_15_est)
 
 jaa21_15_est <- jaa21_15 %>%
-  mutate(N_t = -7.9694  + (1/0.4268)*Time)
+  mutate(N_t = -6.8710  + (0.3284)*Time)
 
 doub_est <- rbind(doub_est, jaa21_15_est)
 ```
 plot & get means
 ```{r}
-doub_est %>%
+cold_double <- doub_est %>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA",
+           strain == "control" ~ "control")) %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+   "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
   ggplot()+
   geom_point(aes(x = Time, y = 2^(N_t)))+
   facet_wrap(~strain, scales = "free_y")+
-  #facet_grid(~strain)+
-  ylab("Estimated amount of bacteria")
-  
+  #facet_grid(.~strain)+
+  ylab("Estimated amount of bacteria")+ 
+  ggtitle("15C Growth Curves")
+cold_double
+#ggsave("cold doubling times.png", cold_double, height = 5, width = 8)  
 ```
 
 
@@ -889,10 +729,18 @@ doub_est %>%
 #picking od 
 3 hr exp to let it recover from
 ```{r}
+
 exp_15 <- correct_well_data_15 %>% 
-  filter(Time > 2.9 &
-           Time < 3.1) %>%
-  mutate(group = "15 exp")
+  filter(Time > 5.9 &
+           Time < 6.1) %>%
+  mutate(group = "15C exp")
 write.csv(exp_15, "exponential 15c.csv" )
+
+exp_15 %>% group_by(strain, Time) %>% filter(!is.na(luminescence)) %>% summarise(mean = mean(luminescence)) 
+
+exp_15 %>% group_by(strain, Time) %>% filter(!is.na(luminescence), strain == "JAA13") 
 ```
+
+
+
 
