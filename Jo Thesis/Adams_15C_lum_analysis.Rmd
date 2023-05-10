@@ -5,7 +5,7 @@ date: "2023-04-10"
 output: html_document
 ---
 
-
+#all of the processing of data code is taken from Minnie's code
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE, 
                       fig.height=3, fig.width=5, fig.align = "center")
@@ -485,7 +485,8 @@ correct_well_data_15_3 <- normalized_lum_15_3 %>%
   filter(strain != "condensated")
 ```
 
-#checking background
+#This is now new - checking to see if growth occured as expected
+trial 1
 ```{r}
  data.frame(normalize_envi_15_1) %>%
   filter(strain == "control") %>% 
@@ -506,6 +507,7 @@ correct_well_data_15_3 <- normalized_lum_15_3 %>%
   ggplot(aes(x = Time, y = mean_back)) +
   geom_point() 
 ```
+trial 2
 ```{r}
  data.frame(normalize_envi_15_2) %>%
   filter(strain == "control") %>% 
@@ -526,8 +528,8 @@ correct_well_data_15_3 <- normalized_lum_15_3 %>%
   ggplot(aes(x = Time, y = mean_back)) +
   geom_point() 
 ```
+trial 3
 ```{r}
-
  data.frame(normalize_envi_15_3) %>%
   filter(strain == "control") %>% 
   ggplot(aes(x = Time, y = absorbance, colour = well)) +
@@ -550,9 +552,7 @@ correct_well_data_15_3 <- normalized_lum_15_3 %>%
   geom_point() 
 ```
 
-
-
-#Merging 15C Data 
+#Merging 15C Data into one table & making a table of means
 ```{r}
 
 correct_well_data_15_1 <- correct_well_data_15_1 %>% mutate(trial = "one")
@@ -575,7 +575,7 @@ correct_well_data_15_means <- correct_well_data_15 %>% group_by(strain, Time)%>%
            strain == "JAA21" ~ "K.p + K.p bolA",
            strain == "control" ~ "control"))
 ```
-
+#plot the lum & abs for each species over time
 ```{r}
 cold_lum_plot <- data.frame(correct_well_data_15_means) %>%
   filter(strain != "control") %>%
@@ -664,70 +664,9 @@ ggplot(jaa21_15, aes(x =Time, y=log_abs)) +
   stat_smooth(method = lm)
 lm(log_abs ~ Time, data = jaa21_15)
 ```
-make a new table with doubling time estimations
-```{r}
 
-jaa7_15_est <- jaa7_15 %>%
-  mutate(N_t = -8.5758 + (0.2805)*Time)
-
-jaa13_15_est <- jaa13_15 %>%
-  mutate(N_t = -7.794 + (0.356)*Time)
-
-doub_est <- rbind(jaa7_15_est, jaa13_15_est)
-
-jaa17_15_est <- jaa17_15 %>%
-  mutate(N_t = -8.550 + (0.245)*Time)
-
-doub_est <- rbind(doub_est, jaa17_15_est)
-
-jaa18_15_est <- jaa18_15 %>%
-  mutate(N_t = -16.2386 + (0.4006)*Time)
-
-doub_est <- rbind(doub_est, jaa18_15_est)
-
-jaa20_15_est <- jaa20_15 %>%
-  mutate(N_t = -7.2754 + (0.3365)*Time)
-
-doub_est <- rbind(doub_est, jaa20_15_est)
-
-jaa21_15_est <- jaa21_15 %>%
-  mutate(N_t = -6.8710  + (0.3284)*Time)
-
-doub_est <- rbind(doub_est, jaa21_15_est)
-```
-plot & get means
-```{r}
-cold_double <- doub_est %>%
-  dplyr::mutate(strain = case_when(
-           strain == "JAA7" ~ "wt E.coli",
-           strain == "JAA13" ~ "wt K.pneum",
-           strain == "JAA17" ~ "E.c + E.c bolA",
-           strain == "JAA18" ~ "E.c + K.p bolA",
-           strain == "JAA20" ~ "K.p + E.c bolA",
-           strain == "JAA21" ~ "K.p + K.p bolA",
-           strain == "control" ~ "control")) %>%
-  dplyr::mutate(strain = fct_relevel(
-    strain,
-   "wt E.coli",
-    "wt K.pneum",
-    "E.c + E.c bolA",
-    "E.c + K.p bolA",
-    "K.p + E.c bolA",
-    "K.p + K.p bolA")) %>%
-  ggplot()+
-  geom_point(aes(x = Time, y = 2^(N_t)))+
-  facet_wrap(~strain, scales = "free_y")+
-  #facet_grid(.~strain)+
-  ylab("Estimated amount of bacteria")+ 
-  ggtitle("15C Growth Curves")
-cold_double
-#ggsave("cold doubling times.png", cold_double, height = 5, width = 8)  
-```
-
-
-
-#picking od 
-3 hr exp to let it recover from
+#picking od at one time for stat_exp_plot_code file 
+this will allow us to make a comparison across all 3 growth conditions more easily.
 ```{r}
 
 exp_15 <- correct_well_data_15 %>% 

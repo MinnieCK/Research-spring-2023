@@ -6,6 +6,10 @@ output: html_document
 ---
 
 RUN Adams_37C_lum_analysis AND Adams_15C_lum_analysis FIRST
+
+#find the doubling time of each strain at each temp in each trial and make a table for that strain at that temp
+use only the exponetial growth period for both temps
+37C
 ```{r}
 #JAA7
 jaa7_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA7", trial == "one", 
@@ -110,6 +114,7 @@ jaa21_37 <- data.frame(doub_time = c(60*1/1.953, 60*1/1.691, 60*1/1.472  ), tria
 doub_est_37 <- rbind(doub_est_37, jaa21_37) %>% 
   mutate(temp = "37C")
 ```
+15 c
 ```{r}
 #JAA7
 jaa7_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA7", trial == "one", 
@@ -214,6 +219,8 @@ jaa21_15 <- data.frame(doub_time = c(60*1/0.3256, 60*1/0.347, 60*1/0.3124  ), tr
 doub_est_15 <- rbind(doub_est_15, jaa21_15) %>% 
   mutate(temp = "15C")
 ```
+#merge the tables for both temps and plot
+this figure is used in final paper (last fig)
 ```{r}
 doub_est <- rbind(doub_est_15, doub_est_37)
 

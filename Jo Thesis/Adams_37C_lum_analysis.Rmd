@@ -3,7 +3,7 @@ title: "Jo Thesis 37 Cdata analysis"
 output: pdf_document
 ---
 
-
+#all of the code for each trial individually is from minnie 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE, 
                       fig.height=3, fig.width=5, fig.align = "center")
@@ -475,7 +475,8 @@ correct_well_data_37_3 <- normalized_lum_37_3 %>%
   filter(strain != "condensated")
 ```
 
-#checking background
+#New code - checking background & if growth looks normal for each well 
+trial 1
 ```{r}
  data.frame(normalize_envi_37_1) %>%
   filter(strain == "control") %>% 
@@ -496,7 +497,7 @@ correct_well_data_37_3 <- normalized_lum_37_3 %>%
   ggplot(aes(x = Time, y = mean_back)) +
   geom_point() 
 ```
-
+trial 2
 ```{r}
 data.frame(normalize_envi_37_2) %>%
   filter(strain == "control") %>% 
@@ -517,6 +518,7 @@ data.frame(normalize_envi_37_2) %>%
   ggplot(aes(x = Time, y = mean_back)) +
   geom_point() 
 ```
+trial 3
 ```{r}
 data.frame(normalize_envi_37_3) %>%
   filter(strain == "control") %>% 
@@ -539,7 +541,7 @@ data.frame(normalize_envi_37_3) %>%
 ```
 
 
-#Merging 37C Data 
+#Merging 37C Data into one df & find means
 ```{r}
 correct_well_data_37_1 <- correct_well_data_37_1 %>% mutate(trial = "one")
 correct_well_data_37_2 <- correct_well_data_37_2 %>% mutate(trial = "two")
@@ -561,7 +563,7 @@ correct_well_data_37_means <- correct_well_data_37 %>% group_by(strain, Time)%>%
            strain == "JAA21" ~ "K.p + K.p bolA",
            strain == "control" ~ "control"))
 ```
-
+#plot lum & abs (just normalized to background) for each strain over time
 ```{r}
 stat_lum_plot <- data.frame(correct_well_data_37_means) %>%
   filter(strain != "control") %>%
@@ -661,45 +663,8 @@ jaa7_37_est <- new_Time %>%
 ```
 
 
-make a new table with doubling time estimations
-```{r}
-
-jaa7_37_est <- jaa7_37 %>% group_by(strain, Time) %>%
-  summarise(log_abs = mean(log_abs)) %>%
-  mutate( N_t = -9.865 + (1.804)*Time)
-
-jaa13_37_est <- jaa13_37 %>%
-  mutate(N_t = -9.178 + (1.619 )*Time)
-
-doub_est_37 <- rbind(jaa7_37_est, jaa13_37_est)
-
-jaa17_37_est <- jaa17_37 %>%
-  mutate(N_t = -9.021 + (1.492)*Time)
-
-doub_est_37 <- rbind(doub_est_37, jaa17_37_est)
-
-jaa18_37_est <- jaa18_37 %>%
-  mutate(N_t = -12.072  + (1.362 )*Time)
-
-doub_est_37 <- rbind(doub_est_37, jaa18_37_est)
-
-jaa20_37_est <- jaa20_37 %>%
-  mutate(N_t = -9.638 + (1.697 )*Time)
-
-doub_est_37 <- rbind(doub_est_37, jaa20_37_est)
-
-jaa21_37_est <- jaa21_37 %>%
-  mutate(N_t = -9.499  + (1.695)*Time)
-
-doub_est_37 <- rbind(doub_est_37, jaa21_37_est)
-```
-
-plot  mean doubling time for each 
-```{r}
- 
-```
 #picking od & normalizing
-2 hr exp
+3 hr exp to avoid any weirdness at the beginning of the experiment 
 ```{r}
 exp_37 <- correct_well_data_37 %>% 
   filter(Time > 2.9 &
@@ -724,6 +689,7 @@ correct_well_data_37 %>% filter(Time > .9 &
 ```
 
 
+#make tables for stat_exp_plot_code to compare ods across growth conditions
 
 ```{r}
 exp_37 %>% group_by(Time, strain) %>% filter(!is.na(luminescence), !is.na(absorbance), strain != "control", strain != "JAA7", strain != "JAA13"    )%>%
