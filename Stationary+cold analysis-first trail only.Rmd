@@ -295,7 +295,8 @@ rep_lum <- rep_lum %>%
            strain == "MK64" ~ "E. clocae promoter",
            strain == "MK65" ~ "no promoter",
            strain == "MK66" ~ "E. coli promoter",
-           strain == "MK67" ~ "E. clocae promoter"))
+           strain == "MK67" ~ "E. clocae promoter"),
+         Experiment = "First trial")
 ```
 
 Plot the lum at exponential growth phrase
@@ -311,5 +312,9 @@ rep_lum %>%
   ggtitle("Luminessence at exponential growth (First trial)")
 ```
 
+Export rep_lum as csv file
+```{r}
+write.csv(rep_lum, "/Users/student/Desktop/Harvey Mudd College/research spring 2023/First-trial-lum-expo.csv" ,row.names = FALSE)
+```
 
 
