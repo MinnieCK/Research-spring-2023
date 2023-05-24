@@ -1,0 +1,302 @@
+---
+title: "Spring 2023 data analysis"
+output: pdf_document
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, 
+                      fig.height=3, fig.width=5, fig.align = "center")
+library(tidyverse) 
+library(infer)
+library(broom)
+library(lubridate)
+library(readxl)
+```
+
+import data file
+```{r}
+abs_raw <- read_excel("2023-02-16 second trial full time.xlsx",
+                          range = "B36:CU325")
+colnames(abs_raw)[2] <- "temp"
+
+
+lum_raw <- read_excel("2023-02-16 second trial full time.xlsx",
+                          range = "B329:CU618")
+colnames(lum_raw)[2] <- "temp"
+```
+
+Declare well
+```{r}
+MK62 = c("B2", "B3", "B5", "B7", "B8", "B9", "B10")
+MK63 = c("C2", "C3", "C4", "C6", "C7", "C8", "C9")
+MK64 = c("D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10")
+MK65 = c("E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10")
+MK66 = c("F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10")
+MK67 = c("G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10")
+
+# well that has different amount of LB/controls that get contaminated
+contam = c("B11","C11", "D11", "E11", "F11", "G11", "G1", "D1", "H5", "F1", "E1", "H3", "H4")
+
+# well that have condensation at the start
+conden = c("B6", "C5", "C10", "H6", "H7", "B4")
+
+# well that contains no bacteria
+control = c("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "B1", "B12", "C1", "C12", "D12", "E12", "F12", "G12", "H1", "H2", "H8", "H9", "H10", "H11", "H12")
+```
+
+normalized time/pivot table
+```{r}
+# normalized time into minutes
+abs_with_time <- abs_raw %>%
+  mutate(Time = Time[1] %--% Time, # use time interval to normalize time
+         Time = as.numeric(Time, unit = "hours") )
+
+# pivot absorbance table
+abs_df <- abs_with_time %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "absorbance"
+  )
+
+# normalized time into minutes
+lum_with_time <- lum_raw %>%
+  mutate(Time = Time[1] %--% Time,
+         Time = as.numeric(Time, unit = "hours"))
+
+# pivot luminescence table
+lum_df <- lum_with_time %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "luminescence"
+  )
+```
+
+
+Combine abs and lum table and declare strain/species/promoter group
+```{r}
+# combine abs and lum dataframe
+abs_lum <- cbind(abs_df, lum_df[4])
+
+# assign strain/species/promoter group to each well
+group_abs_lum <- abs_lum %>%
+  mutate(# declare strain
+         strain = case_when(
+           well %in% MK62 ~ "MK62",
+           well %in% MK63 ~ "MK63",
+           well %in% MK64 ~ "MK64",
+           well %in% MK65 ~ "MK65",
+           well %in% MK66 ~ "MK66",
+           well %in% MK67 ~ "MK67",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare species
+         species = case_when(
+           well %in% MK62 ~ "E. coli",
+           well %in% MK63 ~ "E. coli",
+           well %in% MK64 ~ "E. coli",
+           well %in% MK65 ~ "E. clocae",
+           well %in% MK66 ~ "E. clocae",
+           well %in% MK67 ~ "E. clocae",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare promoter
+         promoter = case_when(
+           well %in% MK62 ~ "no promoter",
+           well %in% MK63 ~ "E. coli promoter",
+           well %in% MK64 ~ "E. clocae promoter",
+           well %in% MK65 ~ "no promoter",
+           well %in% MK66 ~ "E. coli promoter",
+           well %in% MK67 ~ "E. clocae promoter",
+           well %in% contam ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"))
+```
+
+
+normalized absorbance and luminescence with backgroud
+```{r}
+# get background abs and lum at each time
+envi_mean <- group_abs_lum %>%
+  filter(strain == "control") %>%
+  group_by(Time) %>%
+  summarize(mean_abs = mean(absorbance),
+            mean_lum = mean(luminescence))
+
+# combine background abs and lum data with experiment data
+normalize_envi <- left_join(group_abs_lum, envi_mean, by = "Time")
+
+# normalize abs and lum with background
+normalize_abs_lum <- normalize_envi %>%
+  mutate(absorbance = case_when(
+           absorbance > mean_abs ~ absorbance - mean_abs,
+           absorbance <= mean_abs ~ 0), #assign number to 0
+         luminescence = case_when(
+           luminescence > mean_lum ~ luminescence - mean_lum,
+           luminescence <= mean_lum ~ 0)) ##assign number to 0
+```
+
+Plot envi_mean out
+```{r}
+# plot background abs
+envi_mean %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (min)") +
+    ylab("background abs") +
+    ggtitle("envi_mean, abs")
+
+# plot background lum
+envi_mean %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (min)") +
+    ylab("background lum") +
+    ggtitle("envi_mean, lum")
+```
+
+normalized luminescence with absorbance
+```{r}
+# normalised the luminescence to the absorbance
+normalized_lum <- normalize_abs_lum %>%
+#normalized_lum <- normalize_envi %>%
+  mutate(normalized = luminescence/absorbance)
+```
+
+Choose only used well, don't use the well that has contamination potential or have condensation at the start
+```{r}
+correct_well_data <- normalized_lum %>%
+  filter(strain != "contaminate") %>%
+  filter(strain != "condensated")
+```
+
+Plot normalized luminescence out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    xlab("Time (hours)") +
+    ylab("normalized luminescence") +
+    ggtitle("First trial") +
+  facet_wrap(~strain)
+```
+
+plot normalized luminescence log scale
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = normalized, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    scale_y_continuous(trans = 'log10') +
+    xlab("Time (min)") +
+    ylab("normalized luminescence (log10)") +
+    ggtitle("Second trial, log scale") +
+    facet_wrap(~strain)
+```
+
+Plot raw abs out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
+    scale_shape_manual(values=c(1, 2, 3, 4))+
+    xlab("Time (hours)") +
+    ylab("raw absorbance") +
+    ggtitle("Raw absorbance second trial") +
+    facet_wrap(~strain)
+```
+
+Plot raw abs log scale
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = absorbance, color = strain, shape = promoter))+
+    scale_shape_manual(values=c(1, 2, 3, 4))+
+    scale_y_continuous(trans = 'log10', limits = c(.01, 2)) +
+    xlab("Time (min)") +
+    ylab("raw absorbance (log10)") +
+    ggtitle("Raw absorbance second trial") +
+    facet_wrap(~strain)
+```
+
+Plot raw lum out
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() +  
+    geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
+    scale_shape_manual(values=c(1, 2, 3))+
+    xlab("Time (hours)") +
+    ylab("luminescence") +
+    ggtitle("Raw luminescence second trial") +
+    facet_wrap(~strain)
+```
+
+Plot raw lum log scale
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  ggplot() + 
+  geom_point(mapping = aes(x = Time, y = luminescence, shape = species, color = strain)) +
+  scale_shape_manual(values=c(1, 2, 3))+
+  scale_y_continuous(trans = 'log10') +
+  xlab("Time (min)") +
+  ylab("luminescence (log10)") +
+  ggtitle("Raw luminescence second trial") +
+  facet_wrap(~strain)
+```
+
+Calculate the lum at exponential growth phrase
+```{r}
+rep_lum <- correct_well_data %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+  group_by(strain) %>%
+  summarise(repLum = mean(normalized),
+            repLumsd = sd(normalized),
+            repLumError = sd(normalized)/sqrt(n()),
+            maxError = repLum + repLumError,
+            minError = repLum - repLumError)
+
+correct_well_data_repLum <- left_join(correct_well_data, rep_lum, by = "strain")
+```
+
+Plot lum at exponential growth
+```{r}
+correct_well_data_repLum %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+  ggplot(aes(x = strain, y = normalized, color = promoter)) +
+  geom_point(aes(shape = species), position = "jitter", alpha = .4) +
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminessence at exponential growth")
+```
+
+Plot the lum at exponential growth phrase
+```{r}
+correct_well_data_repLum %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+  ggplot(aes(x = strain, y = repLum, color = promoter, shape = species)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = repLum - repLumsd, ymax = repLum + repLumsd), width=.2,
+                 position=position_dodge(0.05)) +
+  scale_y_continuous(labels = function(y) format(y, scientific = TRUE)) + 
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminessence at exponential growth (Second trial)")
+```
+
+
+
+

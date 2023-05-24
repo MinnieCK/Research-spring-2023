@@ -43,7 +43,7 @@ contam = c("A4", "A5", "F1", "H1", "B1")
 conden = c("A11", "H12", "G12", "D1", "C2", "D3", "D5", "D7", "G6", "F12", "H4")
 
 # well that contains no bacteria
-control = c("A1", "A2", "A3", "A6", "A7", "A8", "A9", "A10", "A12", "B12", "C1", "C12", "D12", "E1", "E12", "G1", "H2", "H3", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "B11","C11", "D11", "E11", "F11", "G11")
+control = c("A1", "A2", "A3", "A6", "A7", "A8", "A9", "A10", "A12", "B11", "B12", "C1","C11", "C12", "D11", "D12", "E12", "F11", "G1", "H2", "H3", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "E1", "E11", "G11")
 ```
 
 normalized time/pivot table
@@ -259,7 +259,7 @@ Calculate the lum at exponential growth phrase
 ```{r}
 rep_lum <- correct_well_data %>%
   filter(strain != "control") %>%
-  filter(absorbance > 0.05 & absorbance < 0.1) %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
   group_by(strain) %>%
   summarise(repLum = mean(normalized),
             repLumsd = sd(normalized),
@@ -286,13 +286,15 @@ Plot the lum at exponential growth phrase
 ```{r}
 correct_well_data_repLum %>%
   filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
   ggplot(aes(x = strain, y = repLum, color = promoter, shape = species)) +
   geom_point() +
   geom_errorbar(aes(ymin = repLum - repLumsd, ymax = repLum + repLumsd), width=.2,
                  position=position_dodge(0.05)) +
+  scale_y_continuous(labels = function(y) format(y, scientific = TRUE)) + 
   xlab("Strain") +
-  ylab("luminescence (at abs = 0.05-0.1)") +
-  ggtitle("Luminessence at exponential growth")
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminesence at exponential growth (Third trial)")
 ```
 
 
