@@ -1,0 +1,42 @@
+---
+title: "stationary+cold analysis-combine all trials"
+output: csv file
+Author: Chadinthon (Minnie) Kittivorawong
+Date: May 23, 2023
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, 
+                      fig.height=3, fig.width=5, fig.align = "center")
+library(tidyverse) 
+library(infer)
+library(broom)
+library(lubridate)
+library(readxl)
+```
+
+import data file
+```{r}
+First_trial <- read.csv("First-trial-lum-expo.csv")
+
+Second_trial <- read.csv("Second-trial-lum-expo.csv")
+
+Third_trial <- read.csv("Third-trial-lum-expo.csv")
+
+# Combine file
+All_trials <- rbind(First_trial, Second_trial, Third_trial)
+```
+
+plot data out
+```{r}
+All_trials %>%
+  ggplot(aes(x = strain, y = repLum, color = Experiment, shape = promoter)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = repLum - repLumsd, ymax = repLum + repLumsd), width=.2,
+                 position=position_dodge(0.05), alpha = 0.5) +
+  scale_y_continuous(labels = function(y) format(y, scientific = TRUE)) + 
+  geom_line(aes(group = Experiment, color = Experiment), alpha = 0.2) +
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminessence at exponential growth")
+```

@@ -317,7 +317,7 @@ rep_lum %>%
 
 Export rep_lum as csv file
 ```{r}
-write.csv(rep_lum, "/Users/student/Desktop/Harvey Mudd College/research spring 2023/First-trial-lum-expo.csv" ,row.names = FALSE)
+write.csv(rep_lum, "First-trial-lum-expo.csv", row.names = FALSE)
 ```
 
 
