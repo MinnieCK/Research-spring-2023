@@ -1,6 +1,9 @@
 ---
-title: "Spring 2023 data analysis"
-output: pdf_document
+title: "Spring 2023 data analysis, Second trial"
+Detail: 1:200 culture:LB, 24 hours
+output: csv file
+Author: Chadinthon (Minnie) Kittivorawong
+Date: May 23, 2023
 ---
 
 
