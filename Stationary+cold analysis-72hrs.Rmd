@@ -255,6 +255,18 @@ correct_well_data %>%
   facet_wrap(~strain)
 ```
 
+Plot lum at exponential growth
+```{r}
+correct_well_data %>%
+  filter(strain != "control") %>%
+  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+  ggplot(aes(x = strain, y = normalized, color = promoter)) +
+  geom_point(aes(shape = species), position = "jitter", alpha = .4) +
+  xlab("Strain") +
+  ylab("luminescence (at abs = 0.05-0.0.06)") +
+  ggtitle("Luminessence at exponential growth (Third trial)")
+```
+
 Calculate the lum at exponential growth phrase
 ```{r}
 rep_lum <- correct_well_data %>%
@@ -267,26 +279,28 @@ rep_lum <- correct_well_data %>%
             maxError = repLum + repLumError,
             minError = repLum - repLumError)
 
-correct_well_data_repLum <- left_join(correct_well_data, rep_lum, by = "strain")
-```
-
-Plot lum at exponential growth
-```{r}
-correct_well_data_repLum %>%
-  filter(strain != "control") %>%
-  filter(absorbance > 0.05 & absorbance < 0.06) %>%
-  ggplot(aes(x = strain, y = normalized, color = promoter)) +
-  geom_point(aes(shape = species), position = "jitter", alpha = .4) +
-  xlab("Strain") +
-  ylab("luminescence (at abs = 0.05-0.0.06)") +
-  ggtitle("Luminessence at exponential growth")
+rep_lum <- rep_lum %>%
+  mutate(# declare species
+         species = case_when(
+           strain == "MK62" ~ "E. coli",
+           strain == "MK63" ~ "E. coli",
+           strain == "MK64" ~ "E. coli",
+           strain == "MK65" ~ "E. clocae",
+           strain == "MK66" ~ "E. clocae",
+           strain == "MK67" ~ "E. clocae"),
+         # declare promoter
+         promoter = case_when(
+           strain == "MK62" ~ "no promoter",
+           strain == "MK63" ~ "E. coli promoter",
+           strain == "MK64" ~ "E. clocae promoter",
+           strain == "MK65" ~ "no promoter",
+           strain == "MK66" ~ "E. coli promoter",
+           strain == "MK67" ~ "E. clocae promoter"))
 ```
 
 Plot the lum at exponential growth phrase
 ```{r}
-correct_well_data_repLum %>%
-  filter(strain != "control") %>%
-  filter(absorbance > 0.05 & absorbance < 0.06) %>%
+rep_lum %>%
   ggplot(aes(x = strain, y = repLum, color = promoter, shape = species)) +
   geom_point() +
   geom_errorbar(aes(ymin = repLum - repLumsd, ymax = repLum + repLumsd), width=.2,
@@ -294,9 +308,5 @@ correct_well_data_repLum %>%
   scale_y_continuous(labels = function(y) format(y, scientific = TRUE)) + 
   xlab("Strain") +
   ylab("luminescence (at abs = 0.05-0.0.06)") +
-  ggtitle("Luminesence at exponential growth (Third trial)")
+  ggtitle("Luminessence at exponential growth (Third trial)")
 ```
-
-
-
-

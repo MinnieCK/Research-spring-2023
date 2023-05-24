@@ -1,0 +1,138 @@
+---
+title: "Jo Thesis Making stat + exp plot"
+author: "Josephine Adams"
+date: "2023-04-11"
+output: html_document
+---
+#load packages
+```{r global_options, include=FALSE}
+library(tidyverse) 
+library(infer)
+library(broom)
+library(readxl)
+```
+
+#read in tables made in the two temp rmd files 
+```{r}
+exp_15 <- read.csv("exponential 15c.csv")
+all_37 <- read.csv("stat & exp 37c.csv")
+all_stat_exp <- rbind(exp_15, all_37) %>% 
+  filter(absorbance > 0.000001, 
+         strain != "control",
+         !is.na(luminescence) ,
+         !is.na(absorbance))
+```
+
+#make a df with means of normalized luminescence, sd, and iqr
+```{r}
+norm_summarized <- all_stat_exp %>% group_by(strain, group) %>% 
+  filter(strain != "control") %>%
+  summarize(mean_lum = mean(normalized), 
+            sd_lum = sd(normalized),
+            iqr = IQR(normalized))%>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA",
+           strain == "control" ~ "control")) 
+
+norm_summarized <- norm_summarized %>%
+  mutate(ymin = mean_lum - sd_lum, 
+         ymax = mean_lum + sd_lum)
+# norm_summarized <- all_stat_exp %>% group_by(strain, group) %>% 
+#   summarize(time = Time, 
+#             mean_norm_lum = mean(normalized),
+#             sd_norm_lum = sd(normalized))%>%
+#   filter(strain != "control") 
+
+comp_plot <- data.frame(norm_summarized)%>%  
+ filter(strain != "control") %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot(aes(x = group, y = mean_lum)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = (mean_lum - sd_lum), ymax =  mean_lum + sd_lum)) +
+  theme_set(theme_classic())+
+  facet_wrap(~ strain, scales = "free_y")+ 
+  ylab("Normalized Luminescence")
+comp_plot
+ggsave("comparison plot.png", comp_plot, height = 5, width = 8)
+
+comp_violin <- data.frame(all_stat_exp)%>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA")) %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+   "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot(aes(x = group, y = normalized))  +
+  geom_violin() +
+  scale_y_log10() +
+  facet_wrap(~ strain, scales = "free_y") + 
+  ylab("Normalized Luminescence")
+comp_violin
+
+```
+
+#plot in a different way (one point for the mean of each trial & then bar for mean of all of them) - final plot in paper
+```{r}
+mean_comp <- all_stat_exp %>%
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA"))  %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "wt K.pneum",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA"))   %>%
+  group_by(strain, group, trial) %>%
+  summarise(mean_normalized = mean(normalized)) %>%
+  ggplot(mapping = aes(x = group, y = mean_normalized)) +  
+    geom_point() +
+  stat_summary(geom = "point", fun = mean, shape = "_", size = 20, color = "lightgray") +
+  theme_set(theme_classic())+
+  #facet_grid(~ strain)+
+  facet_wrap(~strain, scales = "free_y") +
+  labs( y = "Normalized Luminescence") 
+mean_comp
+ggsave("mean comparison plot.png", mean_comp, height = 5, width = 8)
+```
+#perform a t test to see if there is a significant difference between the means of exp & stat groups
+```{r}
+testing_JAA17 <- all_stat_exp %>% filter(strain == "JAA17") %>%
+                        filter(group == "37C stat" | group == "37C exp")
+testing_JAA17 %>%
+    t.test(normalized ~ group, data=., var.equal = TRUE)
+
+testing_JAA20 <- all_stat_exp %>% filter(strain == "JAA20") %>%
+                        filter(group == "37C stat" | group == "37C exp")
+testing_JAA20 %>%
+    t.test(normalized ~ group, data=., var.equal = TRUE)
+  
+```
+

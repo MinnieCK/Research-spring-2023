@@ -1,0 +1,248 @@
+---
+title: "Doubling Times"
+author: "Josephine Adams"
+date: "2023-04-18"
+output: html_document
+---
+
+RUN Adams_37C_lum_analysis AND Adams_15C_lum_analysis FIRST
+
+#find the doubling time of each strain at each temp in each trial and make a table for that strain at that temp
+use only the exponetial growth period for both temps
+37C
+```{r}
+#JAA7
+jaa7_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA7", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_37_1)
+
+jaa7_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA7", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_37_2)
+
+jaa7_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA7", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_37_3)
+
+jaa7_37 <- data.frame(doub_time = c(60*1/ 1.878, 60*1/2.018, 60*1/1.564), trial = c("one", "two", "three"), strain = "wt E.coli")
+
+#JAA13
+jaa13_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA13", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_37_1)
+
+jaa13_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA13", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_37_2)
+
+jaa13_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA13", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_37_3)
+
+jaa13_37 <- data.frame(doub_time = c(60*1/1.563, 60*1/1.702, 60*1/1.597 ), trial = c("one", "two", "three"), strain = "wt K.pneum")
+
+doub_est_37 <- rbind(jaa7_37, jaa13_37)
+
+#JAA17
+jaa17_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA17", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_37_1)
+
+jaa17_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA17", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_37_2)
+
+jaa17_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA17", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_37_3)
+
+jaa17_37 <- data.frame(doub_time = c(60*1/1.414, 60*1/1.821, 60*1/1.292 ), trial = c("one", "two", "three"), strain = "E.c + E.c bolA")
+
+doub_est_37 <- rbind(doub_est_37, jaa17_37)
+
+#JAA18
+jaa18_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA18", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_37_1)
+
+jaa18_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA18", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_37_2)
+
+jaa18_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA18", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_37_3)
+
+jaa18_37 <- data.frame(doub_time = c(60*1/1.22, 60*1/1.876, 60*1/1.128 ), trial = c("one", "two", "three"), strain = "E.c + K.p bolA")
+
+doub_est_37 <- rbind(doub_est_37, jaa18_37)
+
+
+#JAA20
+jaa20_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA20", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_37_1)
+
+jaa20_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA20", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_37_2)
+
+jaa20_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA20", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_37_3)
+
+jaa20_37 <- data.frame(doub_time = c(60*1/1.839, 60*1/1.735, 60*1/1.583  ), trial = c("one", "two", "three"), strain = "K.p + E.c bolA")
+
+doub_est_37 <- rbind(doub_est_37, jaa20_37)
+
+
+#JAA21
+jaa21_37_1 <- data.frame(reg_times_37) %>% filter(strain == "JAA21", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_37_1)
+
+jaa21_37_2 <- data.frame(reg_times_37) %>% filter(strain == "JAA21", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_37_2)
+
+jaa21_37_3 <- data.frame(reg_times_37) %>% filter(strain == "JAA21", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_37_3)
+
+jaa21_37 <- data.frame(doub_time = c(60*1/1.953, 60*1/1.691, 60*1/1.472  ), trial = c("one", "two", "three"), strain = "K.p + K.p bolA")
+
+doub_est_37 <- rbind(doub_est_37, jaa21_37) %>% 
+  mutate(temp = "37C")
+```
+15 c
+```{r}
+#JAA7
+jaa7_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA7", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_15_1)
+
+jaa7_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA7", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_15_2)
+
+jaa7_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA7", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa7_15_3)
+
+jaa7_15 <- data.frame(doub_time = c(60*1/0.2547, 60*1/0.3269, 60*1/0.260), trial = c("one", "two", "three"), strain = "wt E.coli")
+
+#JAA13
+jaa13_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA13", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_15_1)
+
+jaa13_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA13", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_15_2)
+
+jaa13_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA13", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa13_15_3)
+
+jaa13_15 <- data.frame(doub_time = c(60*1/0.2742, 60*1/0.472, 60*1/0.309 ), trial = c("one", "two", "three"), strain = "wt K.pneum")
+
+doub_est_15 <- rbind(jaa7_15, jaa13_15)
+
+#JAA17
+jaa17_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA17", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_15_1)
+
+jaa17_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA17", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_15_2)
+
+jaa17_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA17", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa17_15_3)
+
+jaa17_15 <- data.frame(doub_time = c(60*1/0.1378, 60*1/0.3944, 60*1/0.198 ), trial = c("one", "two", "three"), strain = "E.c + E.c bolA")
+
+doub_est_15 <- rbind(doub_est_15, jaa17_15)
+
+#JAA18
+jaa18_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA18", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_15_1)
+
+jaa18_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA18", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_15_2)
+
+jaa18_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA18", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa18_15_3)
+
+jaa18_15 <- data.frame(doub_time = c(60*1/0.3433, 60*1/0.3798, 60*1/0.4788 ), trial = c("one", "two", "three"), strain = "E.c + K.p bolA")
+
+doub_est_15 <- rbind(doub_est_15, jaa18_15)
+
+
+#JAA20
+jaa20_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA20", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_15_1)
+
+jaa20_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA20", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_15_2)
+
+jaa20_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA20", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa20_15_3)
+
+jaa20_15 <- data.frame(doub_time = c(60*1/0.3285, 60*1/0.3442, 60*1/0.3376  ), trial = c("one", "two", "three"), strain = "K.p + E.c bolA")
+
+doub_est_15 <- rbind(doub_est_15, jaa20_15)
+
+
+#JAA21
+jaa21_15_1 <- data.frame(reg_times_15) %>% filter(strain == "JAA21", trial == "one", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_15_1)
+
+jaa21_15_2 <- data.frame(reg_times_15) %>% filter(strain == "JAA21", trial == "two", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_15_2)
+
+jaa21_15_3 <- data.frame(reg_times_15) %>% filter(strain == "JAA21", trial == "three", 
+                                               !is.na(absorbance)) 
+lm(log_abs ~ Time, data = jaa21_15_3)
+
+jaa21_15 <- data.frame(doub_time = c(60*1/0.3256, 60*1/0.347, 60*1/0.3124  ), trial = c("one", "two", "three"), strain = "K.p + K.p bolA")
+
+doub_est_15 <- rbind(doub_est_15, jaa21_15) %>% 
+  mutate(temp = "15C")
+```
+#merge the tables for both temps and plot
+this figure is used in final paper (last fig)
+```{r}
+doub_est <- rbind(doub_est_15, doub_est_37)
+
+doub_times<- doub_est %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA"))   %>%
+  ggplot(mapping = aes(x = temp, y = doub_time)) +  
+    geom_point() +
+  stat_summary(geom = "point", fun = mean, shape = "_", size = 20, color = "lightgray") +
+  theme_set(theme_classic())+
+  facet_grid(~ strain)+
+  #facet_wrap(~strain, scales = "free_y") +
+  labs(x = "Temperature", y = "Doubling Time") 
+doub_times
+ggsave("doub times plot.png", doub_times, height = 4, width = 9)
+```
+
+
+

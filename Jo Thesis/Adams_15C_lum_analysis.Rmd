@@ -1,0 +1,685 @@
+---
+title: "Jo Thesis 15C Data analysis"
+author: "Josephine Adams"
+date: "2023-04-10"
+output: html_document
+---
+
+#all of the processing of data code is taken from Minnie's code
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, 
+                      fig.height=3, fig.width=5, fig.align = "center")
+library(tidyverse) 
+library(infer)
+library(broom)
+library(lubridate)
+library(readxl)
+```
+
+Declare well
+```{r}
+# separate well by strain
+JAA7 = c("B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10","B11")
+JAA13 = c("C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10","C11")
+JAA17 = c("D2", "D3", "D4", "D5", "D6", "D7","D8", "D9", "D10", "D11")
+JAA18 = c("E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11")
+JAA20 = c("F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11")
+JAA21 = c("G2", "G3", "G4", "G5", "G6","G7", "G8", "G9", "G10", "G11")
+
+# well that contains no bacteria but get contaminate
+contam = c()
+
+# well that have condensation at the start
+conden = c()
+
+# well that contains no bacteria
+control = c("A1", "A2", "A3","A4", "A5", "A6", "A7", "A8", "A9", "A10","A11", "A12", "B1", "B12", "C1", "C12", "D1","D12", "E1", "E12", "F1", "F12","G1","G12","H1","H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11","H12" )
+```
+
+#15C Exp 1
+import data file
+```{r}
+abs_raw_15_1 <- read_excel("2023-4-6 first 15.xlsx",
+                          range = "B40:CU332")
+colnames(abs_raw_15_1)[2] <- "temp"
+
+
+lum_raw_15_1 <- read_excel("2023-4-6 first 15.xlsx",
+                          range = "B909:CU1201")
+colnames(lum_raw_15_1)[2] <- "temp"
+```
+
+normalized time/pivot table
+```{r}
+# normalized time into minutes
+abs_with_time_15_1 <- abs_raw_15_1 %>%
+  mutate(Time = Time[1] %--% Time, # use time interval to normalize time
+         Time = as.numeric(Time, unit = "hours") )
+
+# pivot absorbance table
+abs_df_15_1 <- abs_with_time_15_1 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "absorbance"
+  )
+
+# normalized time into minutes
+lum_with_time_15_1 <- lum_raw_15_1 %>%
+  mutate(Time = Time[1] %--% Time,
+         Time = as.numeric(Time, unit = "hours"))
+
+# pivot luminescence table
+lum_df_15_1 <- lum_with_time_15_1 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "luminescence"
+  )
+```
+
+which ones to remove for this samle
+```{r}
+JAA13_15_1 = c("C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10")
+JAA21_15_1 = c("G2", "G3", "G4", "G5", "G6","G7", "G8", "G9", "G10")
+
+# well that contains no bacteria but get contaminate
+contam_15_1 = c("C11", "G11" )
+```
+
+Combine abs and lum table and declare strain/species/promoter group
+```{r}
+# combine abs and lum dataframe
+abs_lum_15_1 <- cbind(abs_df_15_1, lum_df_15_1[4])
+
+# assign strain/species/promoter group to each well
+group_abs_lum_15_1 <- abs_lum_15_1 %>%
+  mutate(# declare strain
+         strain = case_when(
+           well %in% JAA7 ~ "JAA7",
+           well %in% JAA13_15_1 ~ "JAA13",
+           well %in% JAA17 ~ "JAA17",
+           well %in% JAA18 ~ "JAA18",
+           well %in% JAA20 ~ "JAA20",
+           well %in% JAA21_15_1 ~ "JAA21",
+           well %in% contam_15_1 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare species
+         species = case_when(
+           well %in% JAA7 ~ "E. coli",
+           well %in% JAA13_15_1 ~ "K. pneumoniae",
+           well %in% JAA17 ~ "E. coli",
+           well %in% JAA18 ~ "E. coli",
+           well %in% JAA20 ~ "K. pneumoniae",
+           well %in% JAA21_15_1 ~ "K. pneumoniae",
+           well %in% contam_15_1 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare promoter
+         promoter = case_when(
+           well %in% JAA7 ~ "no promoter",
+           well %in% JAA13_15_1 ~ "no promoter",
+           well %in% JAA17 ~ "E. coli promoter",
+           well %in% JAA18 ~ "K.pneum promoter",
+           well %in% JAA20 ~ "E. coli promoter",
+           well %in% JAA21_15_1 ~ "K.pneum promoter",
+           well %in% contam_15_1 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"))
+```
+
+normalized absorbance and luminescence with backgroud
+```{r}
+# get background abs and lum at each time
+envi_mean_15_1 <- group_abs_lum_15_1 %>%
+  filter(strain == "control") %>%
+  group_by(Time) %>%
+  summarize(mean_abs = mean(absorbance),
+            mean_lum = mean(luminescence))
+
+# combine background abs and lum data with experiment data
+normalize_envi_15_1 <- left_join(group_abs_lum_15_1, envi_mean_15_1, by = "Time")
+
+# normalize abs and lum with background
+normalize_abs_lum_15_1 <- normalize_envi_15_1 %>%
+  mutate(absorbance = 
+           case_when(
+           absorbance > mean_abs ~ absorbance - mean_abs,
+           absorbance <= mean_abs ~0.000001), #assign number to prevent 0
+         luminescence = case_when(
+           luminescence > mean_lum ~ luminescence - mean_lum,
+           luminescence <= mean_lum ~ NA)) ##assign number to prevent 0
+```
+
+Plot envi_mean out
+```{r}
+# plot background abs
+envi_mean_15_1 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (min)") +
+    ylab("background abs") +
+    ggtitle("envi_mean, abs")
+
+# plot background lum
+envi_mean_15_1 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (min)") +
+    ylab("background lum") +
+    ggtitle("envi_mean, lum")
+```
+
+normalized luminescence with absorbance
+```{r}
+# normalised the luminescence to the absorbance
+normalized_lum_15_1 <- normalize_abs_lum_15_1 %>%
+#normalized_lum <- normalize_envi %>%
+  mutate(normalized = luminescence/absorbance)
+```
+
+Choose only used well, don't use the well that has contamination potential or have condensation at the start
+```{r}
+correct_well_data_15_1 <- normalized_lum_15_1 %>%
+  filter(strain != "contaminate") %>%
+  filter(strain != "condensated")
+```
+
+#15C Exp 2
+import data file
+```{r}
+abs_raw_15_2 <- read_excel("2023-4-8 second 15.xlsx",
+                          range = "B42:CU330")
+colnames(abs_raw_15_2)[2] <- "temp"
+
+
+lum_raw_15_2 <- read_excel("2023-4-8 second 15.xlsx",
+                          range = "B911:CU1199")
+colnames(lum_raw_15_2)[2] <- "temp"
+```
+
+normalized time/pivot table
+```{r}
+# normalized time into minutes
+abs_with_time_15_2 <- abs_raw_15_2 %>%
+  mutate(Time = Time[1] %--% Time, # use time interval to normalize time
+         Time = as.numeric(Time, unit = "hours") )
+
+# pivot absorbance table
+abs_df_15_2 <- abs_with_time_15_2 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "absorbance"
+  )
+
+# normalized time into minutes
+lum_with_time_15_2 <- lum_raw_15_2 %>%
+  mutate(Time = Time[1] %--% Time,
+         Time = as.numeric(Time, unit = "hours"))
+
+# pivot luminescence table
+lum_df_15_2 <- lum_with_time_15_2 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "luminescence"
+  )
+```
+
+what to remove for this replicate 
+```{r}
+JAA20_15_2 = c("F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10" )
+
+# well that contains no bacteria but get contaminate
+contam_15_2 = c("F11")
+```
+
+Combine abs and lum table and declare strain/species/promoter group
+```{r}
+# combine abs and lum dataframe
+abs_lum_15_2 <- cbind(abs_df_15_2, lum_df_15_2[4])
+
+# assign strain/species/promoter group to each well
+group_abs_lum_15_2 <- abs_lum_15_2 %>%
+  mutate(# declare strain
+         strain = case_when(
+           well %in% JAA7 ~ "JAA7",
+           well %in% JAA13 ~ "JAA13",
+           well %in% JAA17 ~ "JAA17",
+           well %in% JAA18 ~ "JAA18",
+           well %in% JAA20_15_2 ~ "JAA20",
+           well %in% JAA21 ~ "JAA21",
+           well %in% contam_15_2 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare species
+         species = case_when(
+           well %in% JAA7 ~ "E. coli",
+           well %in% JAA13 ~ "K. pneumoniae",
+           well %in% JAA17 ~ "E. coli",
+           well %in% JAA18 ~ "E. coli",
+           well %in% JAA20_15_2 ~ "K. pneumoniae",
+           well %in% JAA21 ~ "K. pneumoniae",
+           well %in% contam_15_2 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"),
+         # declare promoter
+         promoter = case_when(
+           well %in% JAA7 ~ "no promoter",
+           well %in% JAA13 ~ "no promoter",
+           well %in% JAA17 ~ "E. coli promoter",
+           well %in% JAA18 ~ "K.pneum promoter",
+           well %in% JAA20_15_2 ~ "E. coli promoter",
+           well %in% JAA21 ~ "K.pneum promoter",
+           well %in% contam_15_2 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control ~ "control"))
+```
+
+normalized absorbance and luminescence with backgroud
+```{r}
+# get background abs and lum at each time
+envi_mean_15_2 <- group_abs_lum_15_2 %>%
+  filter(strain == "control") %>%
+  group_by(Time) %>%
+  summarize(mean_abs = mean(absorbance),
+            mean_lum = mean(luminescence))
+
+# combine background abs and lum data with experiment data
+normalize_envi_15_2 <- left_join(group_abs_lum_15_2, envi_mean_15_2, by = "Time")
+
+# normalize abs and lum with background
+normalize_abs_lum_15_2 <- normalize_envi_15_2 %>%
+  mutate(absorbance = 
+           case_when(
+           absorbance > mean_abs ~ absorbance - mean_abs,
+           absorbance <= mean_abs ~0.000001), #assign number to prevent 0
+         luminescence = case_when(
+           luminescence > mean_lum ~ luminescence - mean_lum,
+           luminescence <= mean_lum ~ NA)##assign number to prevent 0
+         ) 
+```
+
+Plot envi_mean out
+```{r}
+# plot background abs
+envi_mean_15_2 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (min)") +
+    ylab("background abs") +
+    ggtitle("envi_mean, abs")
+
+# plot background lum
+envi_mean_15_2 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (min)") +
+    ylab("background lum") +
+    ggtitle("envi_mean, lum")
+```
+
+normalized luminescence with absorbance
+```{r}
+# normalised the luminescence to the absorbance
+normalized_lum_15_2 <- normalize_abs_lum_15_2 %>%
+  mutate(normalized = luminescence/absorbance)
+```
+
+Choose only used well, don't use the well that has contamination potential or have condensation at the start
+```{r}
+correct_well_data_15_2 <- normalized_lum_15_2 %>%
+  filter(strain != "contaminate") %>%
+  filter(strain != "condensated")
+```
+
+#15C Exp 3
+import data file
+```{r}
+abs_raw_15_3 <- read_excel("2023-4-9 third 14.xlsx",
+                          range = "B42:CU319")
+colnames(abs_raw_15_3)[2] <- "temp"
+
+
+lum_raw_15_3 <- read_excel("2023-4-9 third 14.xlsx",
+                          range = "B911:CU1188")
+colnames(lum_raw_15_3)[2] <- "temp"
+```
+
+normalized time/pivot table
+```{r}
+# normalized time into minutes
+abs_with_time_15_3 <- abs_raw_15_3 %>%
+  mutate(Time = Time[1] %--% Time, # use time interval to normalize time
+         Time = as.numeric(Time, unit = "hours") )
+
+# pivot absorbance table
+abs_df_15_3 <- abs_with_time_15_3 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "absorbance"
+  )
+
+# normalized time into minutes
+lum_with_time_15_3 <- lum_raw_15_3 %>%
+  mutate(Time = Time[1] %--% Time,
+         Time = as.numeric(Time, unit = "hours"))
+
+# pivot luminescence table
+lum_df_15_3 <- lum_with_time_15_3 %>% 
+  pivot_longer(
+    cols = !Time & !temp, 
+    names_to = "well", 
+    values_to = "luminescence"
+  )
+```
+
+```{r}
+JAA13_15_3 = c( "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10","C11")
+JAA17_15_3 = c("D2", "D3", "D4", "D5", "D6", "D7","D8", "D9", "D10")
+
+# well that contains no bacteria but get contaminate
+contam_15_3 = c("A1", "A4","A2", "A3","C2","B1","D11")
+control_15_3 = c( "A5", "A6", "A7", "A8", "A9", "A10","A11", "A12",  "B12", "C1", "C12", "D1","D12", "E1", "E12", "F1", "F12","G1","G12","H1","H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11","H12" )
+```
+
+
+Combine abs and lum table and declare strain/species/promoter group
+```{r}
+# combine abs and lum dataframe
+abs_lum_15_3 <- cbind(abs_df_15_3, lum_df_15_3[4])
+
+# assign strain/species/promoter group to each well
+group_abs_lum_15_3 <- abs_lum_15_3 %>%
+  mutate(# declare strain
+         strain = case_when(
+           well %in% JAA7 ~ "JAA7",
+           well %in% JAA13_15_3 ~ "JAA13",
+           well %in% JAA17_15_3 ~ "JAA17",
+           well %in% JAA18 ~ "JAA18",
+           well %in% JAA20 ~ "JAA20",
+           well %in% JAA21 ~ "JAA21",
+           well %in% contam_15_3 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control_15_3 ~ "control"),
+         # declare species
+         species = case_when(
+           well %in% JAA7 ~ "E. coli",
+           well %in% JAA13_15_3 ~ "K. pneumoniae",
+           well %in% JAA17_15_3 ~ "E. coli",
+           well %in% JAA18 ~ "E. coli",
+           well %in% JAA20 ~ "K. pneumoniae",
+           well %in% JAA21 ~ "K. pneumoniae",
+           well %in% contam_15_3 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control_15_3 ~ "control"),
+         # declare promoter
+         promoter = case_when(
+           well %in% JAA7 ~ "no promoter",
+           well %in% JAA13_15_3 ~ "no promoter",
+           well %in% JAA17_15_3 ~ "E. coli promoter",
+           well %in% JAA18 ~ "K.pneum promoter",
+           well %in% JAA20 ~ "E. coli promoter",
+           well %in% JAA21 ~ "K.pneum promoter",
+           well %in% contam_15_3 ~ "contaminate",
+           well %in% conden ~ "condensated",
+           well %in% control_15_3 ~ "control"))
+```
+
+normalized absorbance and luminescence with backgroud
+```{r}
+# get background abs and lum at each time
+envi_mean_15_3 <- group_abs_lum_15_3 %>%
+  filter(strain == "control") %>%
+  group_by(Time) %>%
+  summarize(mean_abs = mean(absorbance),
+            mean_lum = mean(luminescence))
+
+# combine background abs and lum data with experiment data
+normalize_envi_15_3 <- left_join(group_abs_lum_15_3, envi_mean_15_3, by = "Time")
+
+# normalize abs and lum with background
+normalize_abs_lum_15_3 <- normalize_envi_15_3 %>%
+  mutate(absorbance =  
+           case_when(
+           absorbance > mean_abs ~ absorbance - mean_abs,
+           absorbance <= mean_abs ~ 0.000001), #assign number to prevent 0
+         luminescence = case_when(
+           luminescence > mean_lum ~ luminescence - mean_lum,
+           luminescence <= mean_lum ~ NA)) ##assign number to prevent 0
+```
+
+Plot envi_mean out
+```{r}
+# plot background abs
+envi_mean_15_3 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_abs)) +
+    xlab("Time (min)") +
+    ylab("background abs") +
+    ggtitle("envi_mean, abs")
+
+# plot background lum
+envi_mean_15_3 %>%
+  ggplot() + 
+    geom_point(mapping = aes(x = Time, y = mean_lum)) +
+    xlab("Time (min)") +
+    ylab("background lum") +
+    ggtitle("envi_mean, lum")
+```
+
+normalized luminescence with absorbance
+```{r}
+# normalised the luminescence to the absorbance
+normalized_lum_15_3 <- normalize_abs_lum_15_3 %>%
+  mutate(normalized = luminescence/absorbance)
+```
+
+Choose only used well, don't use the well that has contamination potential or have condensation at the start
+```{r}
+correct_well_data_15_3 <- normalized_lum_15_3 %>%
+  filter(strain != "contaminate") %>%
+  filter(strain != "condensated")
+```
+
+#This is now new - checking to see if growth occured as expected
+trial 1
+```{r}
+ data.frame(normalize_envi_15_1) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+ data.frame(normalize_envi_15_1) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+ 
+ data.frame(normalize_envi_15_1) %>% 
+   filter(strain == "control") %>% 
+   group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
+```
+trial 2
+```{r}
+ data.frame(normalize_envi_15_2) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+ data.frame(normalize_envi_15_2) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+ 
+  data.frame(normalize_envi_15_2) %>% 
+   filter(strain == "control") %>% 
+    group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
+```
+trial 3
+```{r}
+ data.frame(normalize_envi_15_3) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() +
+  facet_wrap(~well)
+
+
+ data.frame(normalize_envi_15_3) %>%
+  filter(strain == "control") %>% 
+  ggplot(aes(x = Time, y = absorbance, colour = well)) +
+  geom_point() 
+
+ 
+  data.frame(normalize_envi_15_3) %>% 
+   filter(strain == "control") %>% 
+    group_by(Time) %>%
+   summarize(mean_back = mean(absorbance),
+        Time = Time) %>% 
+  ggplot(aes(x = Time, y = mean_back)) +
+  geom_point() 
+```
+
+#Merging 15C Data into one table & making a table of means
+```{r}
+
+correct_well_data_15_1 <- correct_well_data_15_1 %>% mutate(trial = "one")
+correct_well_data_15_2 <- correct_well_data_15_2 %>% mutate(trial = "two")
+correct_well_data_15_3 <- correct_well_data_15_3 %>% mutate(trial = "three")
+
+correct_well_data_15 <- rbind(correct_well_data_15_1, correct_well_data_15_2)
+correct_well_data_15 <- rbind(correct_well_data_15, correct_well_data_15_3)
+
+correct_well_data_15_means <- correct_well_data_15 %>% group_by(strain, Time)%>%  
+  summarise(mean_lum = mean(luminescence), 
+            n = n(), 
+            mean_abs = mean(absorbance)) %>% 
+  dplyr::mutate(strain = case_when(
+           strain == "JAA7" ~ "wt E.coli",
+           strain == "JAA13" ~ "wt K.pneum",
+           strain == "JAA17" ~ "E.c + E.c bolA",
+           strain == "JAA18" ~ "E.c + K.p bolA",
+           strain == "JAA20" ~ "K.p + E.c bolA",
+           strain == "JAA21" ~ "K.p + K.p bolA",
+           strain == "control" ~ "control"))
+```
+#plot the lum & abs for each species over time
+```{r}
+cold_lum_plot <- data.frame(correct_well_data_15_means) %>%
+  filter(strain != "control") %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot() +  
+    geom_point(mapping = aes(x = Time, y = mean_lum, colour = strain)) +
+    xlab("Time (hours)") +
+    ylab("Luminescence") +
+    ggtitle("Mean luminescence 15C") +
+    facet_grid(~strain)
+cold_lum_plot
+ggsave("15C lum plot.png", cold_lum_plot, height = 4, width = 9)
+```
+
+```{r}
+cold_abs_plot <- data.frame(correct_well_data_15_means) %>%
+  filter(strain != "control") %>%
+  dplyr::mutate(strain = fct_relevel(
+    strain,
+    "wt E.coli",
+    "wt K.pneum",
+    "E.c + E.c bolA",
+    "E.c + K.p bolA",
+    "K.p + E.c bolA",
+    "K.p + K.p bolA")) %>%
+  ggplot() +  
+    geom_point(mapping = aes(x = Time, y = mean_abs, colour = strain)) +
+    xlab("Time (hours)") +
+    ylab("Log Transformed Absorbance") +
+    ggtitle("Mean absorbance 15C") +
+    facet_grid(~strain) +
+  scale_y_log10()
+cold_abs_plot
+ggsave("15C abs plot.png", cold_abs_plot, height = 4, width = 9)
+```
+
+#Making regression to approx doubling time 
+```{r}
+reg_times_15 <- correct_well_data_15 %>% 
+  filter(Time > 5 &
+           Time < 15) %>%
+  mutate(log_abs = log2(absorbance))
+```
+regressions on all strains individually
+```{r}
+jaa7_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA7")
+ggplot(jaa7_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm)
+lm(log_abs ~ Time, data = jaa7_15)
+
+jaa13_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA13")
+ggplot(jaa13_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm)
+lm(log_abs ~ Time, data = jaa13_15)
+
+jaa17_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA17")
+ggplot(jaa17_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm)
+lm(log_abs ~ Time, data = jaa17_15)
+
+jaa18_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA18")
+ggplot(jaa18_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm) #this one doesn't look at good
+lm(log_abs ~ Time, data = jaa18_15)
+
+jaa20_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA20")
+ggplot(jaa20_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm)
+lm(log_abs ~ Time, data = jaa20_15)
+
+jaa21_15 <- data.frame(reg_times_15) %>% filter(strain == "JAA21")
+ggplot(jaa21_15, aes(x =Time, y=log_abs)) +
+  geom_point() +
+  stat_smooth(method = lm)
+lm(log_abs ~ Time, data = jaa21_15)
+```
+
+#picking od at one time for stat_exp_plot_code file 
+this will allow us to make a comparison across all 3 growth conditions more easily.
+```{r}
+
+exp_15 <- correct_well_data_15 %>% 
+  filter(Time > 5.9 &
+           Time < 6.1) %>%
+  mutate(group = "15C exp")
+write.csv(exp_15, "exponential 15c.csv" )
+
+exp_15 %>% group_by(strain, Time) %>% filter(!is.na(luminescence)) %>% summarise(mean = mean(luminescence)) 
+
+exp_15 %>% group_by(strain, Time) %>% filter(!is.na(luminescence), strain == "JAA13") 
+```
+
+
+
+
